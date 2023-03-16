@@ -95,57 +95,51 @@ def get_objects_summary(predictions: List[Dict]):
 
 
 def post_image(
-    url: str, image_bytes: bytes, timeout: int, data: dict
-) -> requests.models.Response:
+    url: str, image_bytes: bytes, timeout: int, data: dict) -> requests.models.Response:
+
     """Post an image to CodeProject.AI Server. Only handles exceptions."""
+    
     try:
-        return requests.post(
-            url, files={"image": image_bytes}, data=data, timeout=timeout
-        )
+        return requests.post(url, files={"image": image_bytes}, data=data, timeout=timeout)
     except requests.exceptions.Timeout:
-        raise CodeProjectAIException(
-            f"Timeout connecting to CodeProject.AI Server, the current timeout is {timeout} seconds, try increasing this value"
-        )
+        raise CodeProjectAIException(f"CodeProject.AI Server connection timeout. Current " +
+                                      "timeout is {timeout} seconds, try increasing this")
     except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
-        raise CodeProjectAIException(
-            f"CodeProject.AI Server connection error, check your IP and port: {exc}"
-        )
+        raise CodeProjectAIException(f"CodeProject.AI Server connection error, check your IP and port: {exc}")
 
 
 def process_image(
     url: str,
     image_bytes: bytes,
-    api_key: str,
     min_confidence: float,
     timeout: int,
     data: dict = {},
 ) -> Dict:
     """Process image_bytes and detect. Handles common status codes"""
-    data["api_key"] = api_key
+
     data["min_confidence"] = min_confidence
+
     response = post_image(url=url, image_bytes=image_bytes, timeout=timeout, data=data)
+
     if response.status_code == HTTP_OK:
         return response.json()
-    elif response.status_code == BAD_URL:
+    
+    if response.status_code == BAD_URL:
         raise CodeProjectAIException(f"Bad url supplied, url {url} raised error {BAD_URL}")
     else:
-        raise CodeProjectAIException(
-            f"Error from CodeProject.AI Server request, status code: {response.status_code}"
-        )
+        raise CodeProjectAIException(f"CodeProject.AI Server error: {response.status_code}")
 
 
-def get_stored_faces(url, api_key, timeout) -> List:
+def get_stored_faces(url, timeout) -> List:
     """Posts a request and get the stored faces as a list"""
     try:
-        data = requests.post(url, timeout=timeout, data={"api_key": api_key})
+        data = requests.post(url, timeout=timeout, data={})
     except requests.exceptions.Timeout:
-        raise CodeProjectAIException(
-            f"Timeout connecting to CodeProject.AI Server, the current timeout is {timeout} seconds, try increasing this value"
-        )
+        raise CodeProjectAIException(f"CodeProject.AI Server connection timeout. Current " +
+                                      "timeout is {timeout} seconds, try increasing this")
     except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
-        raise CodeProjectAIException(
-            f"CodeProject.AI Server connection error, check your IP and port: {exc}"
-        )
+        raise CodeProjectAIException(f"CodeProject.AI Server connection error, check your IP and port: {exc}")
+
     return data.json()
 
 
@@ -163,8 +157,10 @@ class CodeProjectAIVision:
         url_register: str     = "",
         url_face_list: str    = "",
     ):
-        self._timeout        = timeout
-        self._min_confidence = min_confidence
+        self.port            = port
+        self.timeout         = timeout
+        self.min_confidence  = min_confidence
+
         self._url_base       = URL_BASE_VISION.format(ip=ip, port=port)
         self._url_detect     = self._url_base + url_detect
         self._url_recognize  = self._url_base + url_recognize
@@ -199,12 +195,13 @@ class CodeProjectAIObject(CodeProjectAIVision):
             url_detect = URL_CUSTOM.format(custom_model=custom_model)
         else:
             url_detect = URL_OBJECT_DETECTION
+            
         super().__init__(
-            ip=ip,
-            port=port,
-            timeout=timeout,
-            min_confidence=min_confidence,
-            url_detect=url_detect,
+            ip             = ip,
+            port           = port,
+            timeout        = timeout,
+            min_confidence = min_confidence,
+            url_detect     = url_detect,
         )
 
     def detect(self, image_bytes: bytes):
@@ -212,9 +209,8 @@ class CodeProjectAIObject(CodeProjectAIVision):
         response = process_image(
             url            = self._url_detect,
             image_bytes    = image_bytes,
-            api_key        = self._api_key,
-            min_confidence = self._min_confidence,
-            timeout        = self._timeout,
+            min_confidence = self.min_confidence,
+            timeout        = self.timeout,
         )
         return response["predictions"]
 
@@ -226,14 +222,12 @@ class CodeProjectAIScene(CodeProjectAIVision):
         self,
         ip: str = DEFAULT_IP,
         port: int = DEFAULT_PORT,
-        api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     ):
         super().__init__(
             ip=ip,
             port=port,
-            api_key=api_key,
             timeout=timeout,
             min_confidence=min_confidence,
             url_recognize=URL_SCENE_RECOGNIZE,
@@ -244,9 +238,8 @@ class CodeProjectAIScene(CodeProjectAIVision):
         response = process_image(
             url=self._url_recognize,
             image_bytes=image_bytes,
-            api_key=self._api_key,
-            min_confidence=self._min_confidence,
-            timeout=self._timeout,
+            min_confidence=self.min_confidence,
+            timeout=self.timeout,
         )
         del response["success"]
         return response
@@ -278,9 +271,8 @@ class CodeProjectAIFace(CodeProjectAIVision):
         response = process_image(
             url            = self._url_detect,
             image_bytes    = image_bytes,
-            api_key        = self._api_key,
-            min_confidence = self._min_confidence,
-            timeout        = self._timeout,
+            min_confidence = self.min_confidence,
+            timeout        = self.timeout,
         )
         return response["predictions"]
 
@@ -291,9 +283,8 @@ class CodeProjectAIFace(CodeProjectAIVision):
         response = process_image(
             url            = self._url_register,
             image_bytes    = image_bytes,
-            api_key        = self._api_key,
-            min_confidence = self._min_confidence,
-            timeout        = self._timeout,
+            min_confidence = self.min_confidence,
+            timeout        = self.timeout,
             data           = { "userid": name },
         )
 
@@ -311,9 +302,8 @@ class CodeProjectAIFace(CodeProjectAIVision):
         response = process_image(
             url            = self._url_recognize,
             image_bytes    = image_bytes,
-            api_key        = self._api_key,
-            min_confidence = self._min_confidence,
-            timeout        = self._timeout,
+            min_confidence = self.min_confidence,
+            timeout        = self.timeout,
         )
 
         return response["predictions"]
@@ -321,6 +311,6 @@ class CodeProjectAIFace(CodeProjectAIVision):
     def get_registered_faces(self):
         """Get the name of the registered faces"""
         response = get_stored_faces(
-            url=self._url_face_list, api_key=self._api_key, timeout=self._timeout
+            url=self._url_face_list, timeout=self.timeout
         )
         return response["faces"]
