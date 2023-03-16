@@ -1,5 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![PyPI Version](https://img.shields.io/pypi/v/deepstack-python.svg)](https://pypi.org/project/deepstack-python/)
+[![PyPI Version](https://img.shields.io/pypi/v/codeproject-ai-api.svg)](https://pypi.org/project/codeproject-ai-api/)
 
 # codeproject-ai-api
 A simple Python SDK for working with [CodeProject.AI Server](https://codeproject.com/ai). This SDK provides classes for making requests to the object detection & face detection/recognition endpoints, as well as helper functions for processing the results. See the Jupyter notebooks for usage.
