@@ -1,15 +1,15 @@
-import deepstack.core as ds
+import codeprojectai.core as cpai
 import requests
 import requests_mock
 import pytest
 
 MOCK_IP_ADDRESS = "localhost"
-MOCK_PORT = 80
+MOCK_PORT = 32168
 MOCK_CUSTOM_MODEL = "mask"
-OBJ_URL = "http://localhost:80/v1/vision/detection"
-OBJ_CUSTOM_URL = "http://localhost:80/v1/vision/custom/mask"
-SCENE_URL = "http://localhost:80/v1/vision/scene"
-FACE_DETECTION_URL = "http://localhost:80/v1/vision/face"
+OBJ_URL = "http://localhost:32168/v1/vision/detection"
+OBJ_CUSTOM_URL = "http://localhost:32168/v1/vision/custom/mask"
+SCENE_URL = "http://localhost:32168/v1/vision/scene"
+FACE_DETECTION_URL = "http://localhost:32168/v1/vision/face"
 
 CONFIDENCE_THRESHOLD = 0.7
 
@@ -93,57 +93,57 @@ MOCK_FACE_DETECTION_RESPONSE = {
 MOCK_RECOGNIZED_FACES = {"Idris Elba": 75.0}
 
 
-def test_DeepstackObject_detect():
+def test_CodeProjectAIObject_detect():
     """Test a good response from server."""
     with requests_mock.Mocker() as mock_req:
         mock_req.post(
-            OBJ_URL, status_code=ds.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE
+            OBJ_URL, status_code=cpai.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE
         )
-        dsobject = ds.DeepstackObject(MOCK_IP_ADDRESS, MOCK_PORT)
-        predictions = dsobject.detect(MOCK_BYTES)
+        cpai_object = cpai.CodeProjectAIObject(MOCK_IP_ADDRESS, MOCK_PORT)
+        predictions = cpai_object.detect(MOCK_BYTES)
         assert predictions == MOCK_OBJECT_PREDICTIONS
 
 
-def test_DeepstackObject_detect_custom():
+def test_CodeProjectAIObject_detect_custom():
     """Test a good response from server."""
     with requests_mock.Mocker() as mock_req:
         mock_req.post(
-            OBJ_CUSTOM_URL, status_code=ds.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE
+            OBJ_CUSTOM_URL, status_code=cpai.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE
         )
-        dsobject = ds.DeepstackObject(
+        cpai_object = cpai.CodeProjectAIObject(
             MOCK_IP_ADDRESS, MOCK_PORT, custom_model=MOCK_CUSTOM_MODEL
         )
-        predictions = dsobject.detect(MOCK_BYTES)
+        predictions = cpai_object.detect(MOCK_BYTES)
         assert predictions == MOCK_OBJECT_PREDICTIONS
 
-
-def test_DeepstackScene():
-    """Test a good response from server."""
+"""
+def test_CodeProjectAIScene():
+    #Test a good response from server.
     with requests_mock.Mocker() as mock_req:
-        mock_req.post(SCENE_URL, status_code=ds.HTTP_OK, json=MOCK_SCENE_RESPONSE)
+        mock_req.post(SCENE_URL, status_code=cpai.HTTP_OK, json=MOCK_SCENE_RESPONSE)
 
-        dsscene = ds.DeepstackScene(MOCK_IP_ADDRESS, MOCK_PORT)
-        predictions = dsscene.recognize(MOCK_BYTES)
+        cpai_scene = cpai.CodeProjectAIScene(MOCK_IP_ADDRESS, MOCK_PORT)
+        predictions = cpai_scene.recognize(MOCK_BYTES)
         assert predictions == MOCK_SCENE_PREDICTION
+"""
 
-
-def test_DeepstackFace():
+def test_CodeProjectAIFace():
     """Test a good response from server."""
     with requests_mock.Mocker() as mock_req:
         mock_req.post(
             FACE_DETECTION_URL,
-            status_code=ds.HTTP_OK,
+            status_code=cpai.HTTP_OK,
             json=MOCK_FACE_DETECTION_RESPONSE,
         )
 
-        dsface = ds.DeepstackFace(MOCK_IP_ADDRESS, MOCK_PORT)
-        predictions = dsface.detect(MOCK_BYTES)
+        cpai_face = cpai.CodeProjectAIFace(MOCK_IP_ADDRESS, MOCK_PORT)
+        predictions = cpai_face.detect(MOCK_BYTES)
         assert predictions == MOCK_FACE_DETECTION_RESPONSE["predictions"]
 
 
 def test_get_objects():
     """Cant always be sure order of returned list items."""
-    objects = ds.get_objects(MOCK_OBJECT_PREDICTIONS)
+    objects = cpai.get_objects(MOCK_OBJECT_PREDICTIONS)
     assert type(objects) is list
     assert "dog" in objects
     assert "person" in objects
@@ -151,19 +151,19 @@ def test_get_objects():
 
 
 def test_get_objects_summary():
-    objects_summary = ds.get_objects_summary(MOCK_OBJECT_PREDICTIONS)
+    objects_summary = cpai.get_objects_summary(MOCK_OBJECT_PREDICTIONS)
     assert objects_summary == {"dog": 1, "person": 2}
 
 
 def test_get_object_confidences():
-    object_confidences = ds.get_object_confidences(MOCK_OBJECT_PREDICTIONS, "person")
+    object_confidences = cpai.get_object_confidences(MOCK_OBJECT_PREDICTIONS, "person")
     assert object_confidences == MOCK_OBJECT_CONFIDENCES
 
 
 def test_get_confidences_above_threshold():
     assert (
         len(
-            ds.get_confidences_above_threshold(
+            cpai.get_confidences_above_threshold(
                 MOCK_OBJECT_CONFIDENCES, CONFIDENCE_THRESHOLD
             )
         )
@@ -173,4 +173,4 @@ def test_get_confidences_above_threshold():
 
 def test_get_recognized_faces():
     predictions = MOCK_FACE_RECOGNITION_RESPONSE["predictions"]
-    assert ds.get_recognized_faces(predictions) == MOCK_RECOGNIZED_FACES
+    assert cpai.get_recognized_faces(predictions) == MOCK_RECOGNIZED_FACES

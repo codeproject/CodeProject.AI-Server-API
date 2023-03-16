@@ -1,5 +1,5 @@
 """
-Deepstack core.
+CodeProject.AI SDK core.
 """
 import requests
 from PIL import Image
@@ -8,10 +8,9 @@ from typing import Union, List, Set, Dict
 from requests.models import Response
 
 ## Const
-DEFAULT_API_KEY = ""
-DEFAULT_TIMEOUT = 10  # seconds
-DEFAULT_IP = "localhost"
-DEFAULT_PORT = 80
+DEFAULT_TIMEOUT        = 10  # seconds
+DEFAULT_IP             = "localhost"
+DEFAULT_PORT           = 32168
 DEFAULT_MIN_CONFIDENCE = 0.45
 
 ## HTTP codes
@@ -19,17 +18,17 @@ HTTP_OK = 200
 BAD_URL = 404
 
 ## API urls
-URL_BASE_VISION = "http://{ip}:{port}/v1/vision"
-URL_CUSTOM = "/custom/{custom_model}"
+URL_BASE_VISION      = "http://{ip}:{port}/v1/vision"
+URL_CUSTOM           = "/custom/{custom_model}"
 URL_OBJECT_DETECTION = "/detection"
-URL_FACE_DETECTION = "/face"
-URL_FACE_REGISTER = "/face/register"
-URL_FACE_RECOGNIZE = "/face/recognize"
-URL_FACE_LIST = "/face/list"
-URL_SCENE_RECOGNIZE = "/scene"
+URL_FACE_DETECTION   = "/face"
+URL_FACE_REGISTER    = "/face/register"
+URL_FACE_RECOGNIZE   = "/face/recognize"
+URL_FACE_LIST        = "/face/list"
+# URL_SCENE_RECOGNIZE = "/scene"
 
 
-class DeepstackException(Exception):
+class CodeProjectAIException(Exception):
     pass
 
 
@@ -98,18 +97,18 @@ def get_objects_summary(predictions: List[Dict]):
 def post_image(
     url: str, image_bytes: bytes, timeout: int, data: dict
 ) -> requests.models.Response:
-    """Post an image to Deepstack. Only handles exceptions."""
+    """Post an image to CodeProject.AI Server. Only handles exceptions."""
     try:
         return requests.post(
             url, files={"image": image_bytes}, data=data, timeout=timeout
         )
     except requests.exceptions.Timeout:
-        raise DeepstackException(
-            f"Timeout connecting to Deepstack, the current timeout is {timeout} seconds, try increasing this value"
+        raise CodeProjectAIException(
+            f"Timeout connecting to CodeProject.AI Server, the current timeout is {timeout} seconds, try increasing this value"
         )
     except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
-        raise DeepstackException(
-            f"Deepstack connection error, check your IP and port: {exc}"
+        raise CodeProjectAIException(
+            f"CodeProject.AI Server connection error, check your IP and port: {exc}"
         )
 
 
@@ -128,10 +127,10 @@ def process_image(
     if response.status_code == HTTP_OK:
         return response.json()
     elif response.status_code == BAD_URL:
-        raise DeepstackException(f"Bad url supplied, url {url} raised error {BAD_URL}")
+        raise CodeProjectAIException(f"Bad url supplied, url {url} raised error {BAD_URL}")
     else:
-        raise DeepstackException(
-            f"Error from Deepstack request, status code: {response.status_code}"
+        raise CodeProjectAIException(
+            f"Error from CodeProject.AI Server request, status code: {response.status_code}"
         )
 
 
@@ -140,39 +139,37 @@ def get_stored_faces(url, api_key, timeout) -> List:
     try:
         data = requests.post(url, timeout=timeout, data={"api_key": api_key})
     except requests.exceptions.Timeout:
-        raise DeepstackException(
-            f"Timeout connecting to Deepstack, the current timeout is {timeout} seconds, try increasing this value"
+        raise CodeProjectAIException(
+            f"Timeout connecting to CodeProject.AI Server, the current timeout is {timeout} seconds, try increasing this value"
         )
     except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
-        raise DeepstackException(
-            f"Deepstack connection error, check your IP and port: {exc}"
+        raise CodeProjectAIException(
+            f"CodeProject.AI Server connection error, check your IP and port: {exc}"
         )
     return data.json()
 
 
-class DeepstackVision:
-    """Base class for Deepstack vision."""
+class CodeProjectAIVision:
+    """Base class for CodeProject.AI vision."""
 
     def __init__(
         self,
-        ip: str = DEFAULT_IP,
-        port: int = DEFAULT_PORT,
-        api_key: str = DEFAULT_API_KEY,
-        timeout: int = DEFAULT_TIMEOUT,
+        ip: str               = DEFAULT_IP,
+        port: int             = DEFAULT_PORT,
+        timeout: int          = DEFAULT_TIMEOUT,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
-        url_detect: str = "",
-        url_recognize: str = "",
-        url_register: str = "",
-        url_face_list: str = "",
+        url_detect: str       = "",
+        url_recognize: str    = "",
+        url_register: str     = "",
+        url_face_list: str    = "",
     ):
-        self._api_key = api_key
-        self._timeout = timeout
+        self._timeout        = timeout
         self._min_confidence = min_confidence
-        self._url_base = URL_BASE_VISION.format(ip=ip, port=port)
-        self._url_detect = self._url_base + url_detect
-        self._url_recognize = self._url_base + url_recognize
-        self._url_register = self._url_base + url_register
-        self._url_face_list = self._url_base + url_face_list
+        self._url_base       = URL_BASE_VISION.format(ip=ip, port=port)
+        self._url_detect     = self._url_base + url_detect
+        self._url_recognize  = self._url_base + url_recognize
+        self._url_register   = self._url_base + url_register
+        self._url_face_list  = self._url_base + url_face_list
 
     def detect(self):
         """Process image_bytes and detect."""
@@ -187,17 +184,16 @@ class DeepstackVision:
         raise NotImplementedError
 
 
-class DeepstackObject(DeepstackVision):
+class CodeProjectAIObject(CodeProjectAIVision):
     """Work with objects"""
 
     def __init__(
         self,
-        ip: str = DEFAULT_IP,
-        port: int = DEFAULT_PORT,
-        api_key: str = DEFAULT_API_KEY,
-        timeout: int = DEFAULT_TIMEOUT,
+        ip: str               = DEFAULT_IP,
+        port: int             = DEFAULT_PORT,
+        timeout: int          = DEFAULT_TIMEOUT,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
-        custom_model: str = "",
+        custom_model: str     = "",
     ):
         if custom_model:
             url_detect = URL_CUSTOM.format(custom_model=custom_model)
@@ -206,7 +202,6 @@ class DeepstackObject(DeepstackVision):
         super().__init__(
             ip=ip,
             port=port,
-            api_key=api_key,
             timeout=timeout,
             min_confidence=min_confidence,
             url_detect=url_detect,
@@ -215,17 +210,17 @@ class DeepstackObject(DeepstackVision):
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
         response = process_image(
-            url=self._url_detect,
-            image_bytes=image_bytes,
-            api_key=self._api_key,
-            min_confidence=self._min_confidence,
-            timeout=self._timeout,
+            url            = self._url_detect,
+            image_bytes    = image_bytes,
+            api_key        = self._api_key,
+            min_confidence = self._min_confidence,
+            timeout        = self._timeout,
         )
         return response["predictions"]
 
-
-class DeepstackScene(DeepstackVision):
-    """Work with scenes"""
+"""
+class CodeProjectAIScene(CodeProjectAIVision):
+    # Work with scenes
 
     def __init__(
         self,
@@ -245,7 +240,7 @@ class DeepstackScene(DeepstackVision):
         )
 
     def recognize(self, image_bytes: bytes):
-        """Process image_bytes and detect."""
+        #Process image_bytes and detect.
         response = process_image(
             url=self._url_recognize,
             image_bytes=image_bytes,
@@ -255,39 +250,37 @@ class DeepstackScene(DeepstackVision):
         )
         del response["success"]
         return response
+"""
 
-
-class DeepstackFace(DeepstackVision):
+class CodeProjectAIFace(CodeProjectAIVision):
     """Work with objects"""
 
     def __init__(
         self,
-        ip: str = DEFAULT_IP,
-        port: int = DEFAULT_PORT,
-        api_key: str = DEFAULT_API_KEY,
-        timeout: int = DEFAULT_TIMEOUT,
+        ip: str               = DEFAULT_IP,
+        port: int             = DEFAULT_PORT,
+        timeout: int          = DEFAULT_TIMEOUT,
         min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     ):
         super().__init__(
-            ip=ip,
-            port=port,
-            api_key=api_key,
-            timeout=timeout,
-            min_confidence=min_confidence,
-            url_detect=URL_FACE_DETECTION,
-            url_register=URL_FACE_REGISTER,
-            url_recognize=URL_FACE_RECOGNIZE,
-            url_face_list=URL_FACE_LIST,
+            ip             = ip,
+            port           = port,
+            timeout        = timeout,
+            min_confidence = min_confidence,
+            url_detect     = URL_FACE_DETECTION,
+            url_register   = URL_FACE_REGISTER,
+            url_recognize  = URL_FACE_RECOGNIZE,
+            url_face_list  = URL_FACE_LIST,
         )
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
         response = process_image(
-            url=self._url_detect,
-            image_bytes=image_bytes,
-            api_key=self._api_key,
-            min_confidence=self._min_confidence,
-            timeout=self._timeout,
+            url            = self._url_detect,
+            image_bytes    = image_bytes,
+            api_key        = self._api_key,
+            min_confidence = self._min_confidence,
+            timeout        = self._timeout,
         )
         return response["predictions"]
 
@@ -296,12 +289,12 @@ class DeepstackFace(DeepstackVision):
         Register a face name to a file.
         """
         response = process_image(
-            url=self._url_register,
-            image_bytes=image_bytes,
-            api_key=self._api_key,
-            min_confidence=self._min_confidence,
-            timeout=self._timeout,
-            data={"userid": name},
+            url            = self._url_register,
+            image_bytes    = image_bytes,
+            api_key        = self._api_key,
+            min_confidence = self._min_confidence,
+            timeout        = self._timeout,
+            data           = { "userid": name },
         )
 
         if response["success"] == True:
@@ -309,18 +302,18 @@ class DeepstackFace(DeepstackVision):
 
         elif response["success"] == False:
             error = response["error"]
-            raise DeepstackException(
-                f"Deepstack raised an error registering a face: {error}"
+            raise CodeProjectAIException(
+                f"CodeProject.AI Server raised an error registering a face: {error}"
             )
 
     def recognize(self, image_bytes: bytes):
         """Process image_bytes, performing recognition."""
         response = process_image(
-            url=self._url_recognize,
-            image_bytes=image_bytes,
-            api_key=self._api_key,
-            min_confidence=self._min_confidence,
-            timeout=self._timeout,
+            url            = self._url_recognize,
+            image_bytes    = image_bytes,
+            api_key        = self._api_key,
+            min_confidence = self._min_confidence,
+            timeout        = self._timeout,
         )
 
         return response["predictions"]

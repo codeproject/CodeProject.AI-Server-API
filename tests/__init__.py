@@ -1,1 +1,1 @@
-"""Init file for DeepStack."""
+"""Init file for CodeprojectAI tests."""
